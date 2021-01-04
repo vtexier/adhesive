@@ -150,6 +150,10 @@ def _validate_tasks(self: 'ProcessExecutor',
 
 def _match_task(self, task: ProcessTask) -> Optional[ExecutionTask]:
     for task_definition in self.adhesive_process.task_definitions:
+        if hasattr(task, "type"):
+            if token_utils.matches(task_definition.re_expressions, task.type) is not None:
+                return task_definition
+
         if token_utils.matches(task_definition.re_expressions, task.name) is not None:
             return task_definition
 

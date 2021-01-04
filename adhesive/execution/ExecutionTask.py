@@ -49,7 +49,11 @@ class ExecutionTask(ExecutionBaseTask):
             self,
             event: ActiveEvent) -> ExecutionToken:
         with redirect_stdout(event):
-            params = token_utils.matches(self.re_expressions,
+            if hasattr(event.context.task, "type"):
+                params = token_utils.matches(self.re_expressions,
+                                             event.context.task.type)
+            else:
+                params = token_utils.matches(self.re_expressions,
                                          event.context.task_name)
 
             self.code(event.context, *params)  # type: ignore

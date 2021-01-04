@@ -133,6 +133,8 @@ def process_node(result: Process,
 
     if "task" == node_name:
         process_node_task(result, node)
+    elif "serviceTask" == node_name:
+        process_service_task(result, node)
     elif "userTask" == node_name:
         process_usertask(result, node)
     elif "scriptTask" == node_name:
@@ -241,6 +243,61 @@ def process_node_task(p: Process, xml_node) -> None:
         parent_process=p,
         id=xml_node.get("id"),
         name=node_name)
+
+    task = process_potential_loop(task, xml_node)
+
+    p.add_task(task)
+
+
+def process_service_task(p: Process, xml_node) -> None:
+    """ Create a Zeebe Service Task element from the process """
+    node_name = normalize_name(xml_node.get("name"))
+    # zeebe extension node
+    extension_node = xml_node.find("{*}extensionElements")
+    # zeebe task definition
+    definition_node = extension_node.find("{*}taskDefinition")
+    # zeebe custom headers
+    headers_node = extension_node.find("{*}taskHeaders")
+    if headers_node:
+        headers = {}
+        header_definitions = headers_node.findall("{*}header")
+        for header_definition in header_definitions:
+            headers[header_definition.get("key")] = header_definition.get("value")
+    else:
+        headers = None
+    # zeebe ioMapping
+    iomapping_node = extension_node.find("{*}ioMapping")
+    if iomapping_node:
+        mapping = {
+            "inputs": [],
+            "outputs": [],
+        }
+        for element in iomapping_node.findall("{*}input"):
+            mapping["inputs"].append(
+                {
+                    "source": element.get("source"),
+                    "target": element.get("target")
+                }
+            )
+        for element in iomapping_node.findall("{*}output"):
+            mapping["outputs"].append(
+                {
+                    "source": element.get("source"),
+                    "target": element.get("target")
+                }
+            )
+    else:
+        mapping = None
+
+    task = Task(
+        parent_process=p,
+        id=xml_node.get("id"),
+        name=node_name)
+
+    # zeebe properties
+    task.type = definition_node.get("type")
+    task.headers = headers
+    task.mapping = mapping
 
     task = process_potential_loop(task, xml_node)
 
