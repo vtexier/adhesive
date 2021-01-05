@@ -1,3 +1,4 @@
+import logging
 from typing import Callable, Optional
 
 from adhesive.execution import token_utils
@@ -49,6 +50,13 @@ class ExecutionTask(ExecutionBaseTask):
             self,
             event: ActiveEvent) -> ExecutionToken:
         with redirect_stdout(event):
+
+            # loop input
+            if event.task.loop:
+                logging.debug(event.task.loop.__dict__)
+                # capture loop current item in loop input element variable
+                event.context.data[event.task.loop.input_element] = event.context.loop.value
+
             if hasattr(event.context.task, "type"):
                 params = token_utils.matches(self.re_expressions,
                                              event.context.task.type)
@@ -57,6 +65,11 @@ class ExecutionTask(ExecutionBaseTask):
                                          event.context.task_name)
 
             self.code(event.context, *params)  # type: ignore
+
+            # loop output
+            if event.context.loop:
+                # add loop output element variable value to loop output collection dict
+                event.context.data[event.task.loop.output_collection][event.context.loop.index] = event.context.data[event.task.loop.output_element]
 
             return event.context
 

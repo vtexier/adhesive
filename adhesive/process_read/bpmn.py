@@ -299,7 +299,7 @@ def process_service_task(p: Process, xml_node) -> None:
     task.headers = headers
     task.mapping = mapping
 
-    task = process_potential_loop(task, xml_node)
+    task = process_potential_zeebe_loop(task, xml_node)
 
     p.add_task(task)
 
@@ -528,6 +528,44 @@ def process_potential_loop(task: PT, xml_node) -> PT:
         loop_expression = find_node(multi_instance_loop, "completionCondition")
         task.loop = Loop(loop_expression=textwrap.dedent(loop_expression.text),
                          parallel=not is_sequential)
+    else:
+        raise Exception(f"No loop node was present, after the validation.")
+
+    return task
+
+
+def process_potential_zeebe_loop(task: PT, xml_node) -> PT:
+    loop_node = find_node(xml_node, "standardLoopCharacteristics")
+    multi_instance_loop = find_node(xml_node, "multiInstanceLoopCharacteristics")
+
+    if not loop_node and not multi_instance_loop:
+        return task
+
+    if loop_node and multi_instance_loop:
+        raise Exception(f"Both standard loop and multi instance loop were present on {xml_node}")
+
+    if loop_node:
+        loop_expression = find_node(loop_node, "loopCondition")
+        task.loop = Loop(loop_expression=textwrap.dedent(loop_expression.text),
+                         parallel=True)
+    elif multi_instance_loop:
+        is_sequential = get_boolean(multi_instance_loop, "isSequential", False)
+
+        extension_node = multi_instance_loop.find("{*}extensionElements")
+        loop_characteristics_node = extension_node.find("{*}loopCharacteristics")
+        loop_input_collection = loop_characteristics_node.get("inputCollection").strip("= ")
+        loop_input_element = loop_characteristics_node.get("inputElement").strip()
+        loop_output_collection = loop_characteristics_node.get("outputCollection").strip()
+        loop_output_element = loop_characteristics_node.get("outputElement").strip("= ")
+
+        task.loop = Loop(loop_expression=loop_input_collection,
+                         parallel=not is_sequential)
+        # save task loop input element for mapping
+        task.loop.input_element = loop_input_element
+        # save output collection name to create this variable in context.data when task is invoked
+        task.loop.output_collection = loop_output_collection
+        # save task loop output element for mapping
+        task.loop.output_element = loop_output_element
     else:
         raise Exception(f"No loop node was present, after the validation.")
 

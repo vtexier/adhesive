@@ -98,6 +98,9 @@ def create_collection_loop(clone_event, event, loop_data):
     LOG.debug(f"Loop: COLLECTION loop for {event.context.loop.event_id}")
     index = 0
 
+    # create an output collection list for loop task to save results
+    event.context.data[event.context.task.loop.output_collection] = dict()
+
     for item in loop_data:
         new_event = clone_event(event, event.task)
 
