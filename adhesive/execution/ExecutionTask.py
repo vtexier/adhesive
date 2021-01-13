@@ -55,7 +55,13 @@ class ExecutionTask(ExecutionBaseTask):
             event: ActiveEvent) -> ExecutionToken:
         with redirect_stdout(event):
 
-            # loop input
+            # if Zeebe parent process (sub-process) loop...
+            if hasattr(event.task.parent_process, "loop") and event.task.parent_process.loop is not None:
+                # loop input mapping
+                # capture loop current item in loop input element variable
+                event.context.data[event.task.parent_process.loop.input_element] = event.context.loop.value
+
+            # Zeebe task loop input mapping
             if event.task.loop:
                 logging.debug(event.task.loop.__dict__)
                 # capture loop current item in loop input element variable
@@ -105,11 +111,19 @@ class ExecutionTask(ExecutionBaseTask):
                     if "errors" in status:
                         raise Exception(",".join(status["errors"]))
                     event.context.data[output["target"]] = result
-            # loop output
-            if event.context.loop:
+
+            # Zeebe task loop output mapping
+            if event.task.loop:
                 # add loop output element variable value to loop output collection dict
                 event.context.data[event.task.loop.output_collection][event.context.loop.index] = event.context.data[
                     event.task.loop.output_element]
+
+            # Zeebe parent process (sub-process) loop
+            if hasattr(event.task.parent_process, "loop") and event.task.parent_process.loop is not None:
+                # output mapping
+                # add loop output element variable value to loop output collection dict
+                event.context.data[event.task.parent_process.loop.output_collection][event.context.loop.index] = event.context.data[
+                    event.task.parent_process.loop.output_element]
 
             return event.context
 

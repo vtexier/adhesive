@@ -145,6 +145,8 @@ def process_node(result: Process,
         pass
     elif "standardLoopCharacteristics" == node_name:
         pass
+    elif "multiInstanceLoopCharacteristics" == node_name:
+        pass
     elif "startEvent" == node_name:
         process_node_start_event(result, node)
     elif "endEvent" == node_name:
@@ -457,7 +459,7 @@ def process_node_end_event(p: Process, xml_node) -> None:
 
 def process_node_sub_process(p: Process, xml_node) -> None:
     task = cast(SubProcess, read_process(p, xml_node))
-    task = process_potential_loop(task, xml_node)
+    task = process_potential_zeebe_loop(task, xml_node)
 
     p.add_task(task)
 
