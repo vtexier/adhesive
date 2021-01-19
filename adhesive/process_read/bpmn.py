@@ -552,7 +552,6 @@ def process_potential_zeebe_loop(task: PT, xml_node) -> PT:
                          parallel=True)
     elif multi_instance_loop:
         is_sequential = get_boolean(multi_instance_loop, "isSequential", False)
-
         extension_node = multi_instance_loop.find("{*}extensionElements")
         loop_characteristics_node = extension_node.find("{*}loopCharacteristics")
         loop_input_collection = loop_characteristics_node.get("inputCollection").strip("= ")

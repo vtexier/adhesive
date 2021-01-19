@@ -2,7 +2,7 @@ import logging
 import re
 from typing import Callable, Optional
 
-import pySFeel
+from pathlib import Path
 
 from adhesive.execution import token_utils
 from adhesive.execution.ExecutionBaseTask import ExecutionBaseTask, ExpressionList, RegexList
@@ -76,7 +76,6 @@ class ExecutionTask(ExecutionBaseTask):
 
             # inputs mapping
             if event.task.mapping:
-                parser = pySFeel.SFeelParser()
                 for input in event.task.mapping["inputs"]:
                     # remove zeebe equal
                     source = input["source"].strip("= ")
@@ -86,17 +85,19 @@ class ExecutionTask(ExecutionBaseTask):
                             # replace variable occurrence by value if not in quotes
                             source = re.sub('{text}(?=([^"]*"[^"]*")*[^"]*$)'.format(text=variable),
                                             value if not isinstance(value, str) else f"\"{value}\"", source)
-                    # parse source FEEL expression and put result in target variable
-                    status, result = parser.sFeelParse(source)
-                    if "errors" in status:
-                        raise Exception(",".join(status["errors"]))
+                    # parse source python expression and put result in target variable
+                    eval_data = token_utils.get_eval_data(event.context)
+                    try:
+                        result = eval(source, {"Path": Path}, eval_data)
+                    except Exception as exception:
+                        logging.error(exception)
+                        raise Exception(exception)
                     event.context.data[input["target"]] = result
 
             self.code(event.context, *params)  # type: ignore
 
             # outputs mapping
             if event.task.mapping:
-                parser = pySFeel.SFeelParser()
                 for output in event.task.mapping["outputs"]:
                     # remove zeebe equal
                     source = output["source"].strip("= ")
@@ -106,10 +107,13 @@ class ExecutionTask(ExecutionBaseTask):
                             # replace variable occurrence by value if not in quotes
                             source = re.sub('{text}(?=([^"]*"[^"]*")*[^"]*$)'.format(text=variable),
                                             value if not isinstance(value, str) else f"\"{value}\"", source)
-                    # parse source FEEL expression and put result in target variable
-                    status, result = parser.sFeelParse(source)
-                    if "errors" in status:
-                        raise Exception(",".join(status["errors"]))
+                    # parse source python expression and put result in target variable
+                    eval_data = token_utils.get_eval_data(event.context)
+                    try:
+                        result = eval(source, {"Path": Path}, eval_data)
+                    except Exception as exception:
+                        logging.error(exception)
+                        raise Exception(exception)
                     event.context.data[output["target"]] = result
 
             # Zeebe task loop output mapping
