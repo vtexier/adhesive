@@ -29,6 +29,7 @@ class ProcessTask(ExecutableNode):
         self.deduplicate = deduplicate
 
         self.loop: Optional[Loop] = None
+        self.mapping = None
 
     def add_timer(self, timer_boundary_event: TimerBoundaryEvent) -> None:
         if not self.timer_events:

@@ -117,13 +117,14 @@ class ExecutionTask(ExecutionBaseTask):
                     event.context.data[output["target"]] = result
 
             # Zeebe task loop output mapping
-            if event.task.loop:
+            if event.task.loop and isinstance(event.context.data[event.task.loop.output_collection], dict):
+                print(event.task.loop.output_collection, event.context.data)
                 # add loop output element variable value to loop output collection dict
                 event.context.data[event.task.loop.output_collection][event.context.loop.index] = event.context.data[
                     event.task.loop.output_element]
 
             # Zeebe parent process (sub-process) loop
-            if hasattr(event.task.parent_process, "loop") and event.task.parent_process.loop is not None:
+            if hasattr(event.task.parent_process, "loop") and event.task.parent_process.loop is not None and isinstance(event.context.data[event.task.parent_process.loop.output_collection], dict):
                 # output mapping
                 # add loop output element variable value to loop output collection dict
                 event.context.data[event.task.parent_process.loop.output_collection][event.context.loop.index] = event.context.data[
