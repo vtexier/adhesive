@@ -55,11 +55,14 @@ class ExecutionTask(ExecutionBaseTask):
             event: ActiveEvent) -> ExecutionToken:
         with redirect_stdout(event):
 
-            # if Zeebe parent process (sub-process) loop...
-            if hasattr(event.task.parent_process, "loop") and event.task.parent_process.loop is not None:
-                # loop input mapping
-                # capture loop current item in loop input element variable
-                event.context.data[event.task.parent_process.loop.input_element] = event.context.loop.value
+            # if Zeebe parent process (sub-process) has a loop and this task has not a loop...
+            if hasattr(event.task.parent_process, "loop")\
+                    and event.task.parent_process.loop is not None:
+                # if input_element variable exists...
+                if event.task.parent_process.loop.input_element not in event.context.data.as_dict():
+                    # loop input mapping
+                    # capture loop current item in loop input element variable
+                    event.context.data[event.task.parent_process.loop.input_element] = event.context.loop.value
 
             # Zeebe task loop input mapping
             if event.task.loop:
@@ -74,6 +77,9 @@ class ExecutionTask(ExecutionBaseTask):
                 params = token_utils.matches(self.re_expressions,
                                              event.context.task_name)
 
+            # todo: add an event.task.input_data and event.task.output_data to use the I/O mapping between
+            #  context.data and the task scope. Input mapping targets should only be visible to the task, and output_data filtered by output mapping
+            #  is added to context.data after the task. This is to avoid global variable conflicts.
             # inputs mapping
             if event.task.mapping:
                 for input in event.task.mapping["inputs"]:
@@ -87,12 +93,7 @@ class ExecutionTask(ExecutionBaseTask):
                                             value if not isinstance(value, str) else f"\"{value}\"", source)
                     # parse source python expression and put result in target variable
                     eval_data = token_utils.get_eval_data(event.context)
-                    try:
-                        result = eval(source, {"Path": Path}, eval_data)
-                    except Exception as exception:
-                        logging.error(exception)
-                        raise Exception(exception)
-                    event.context.data[input["target"]] = result
+                    event.context.data[input["target"]] = evaluate_expression(source, eval_data)
 
             self.code(event.context, *params)  # type: ignore
 
@@ -109,12 +110,7 @@ class ExecutionTask(ExecutionBaseTask):
                                             value if not isinstance(value, str) else f"\"{value}\"", source)
                     # parse source python expression and put result in target variable
                     eval_data = token_utils.get_eval_data(event.context)
-                    try:
-                        result = eval(source, {"Path": Path}, eval_data)
-                    except Exception as exception:
-                        logging.error(exception)
-                        raise Exception(exception)
-                    event.context.data[output["target"]] = result
+                    event.context.data[output["target"]] = evaluate_expression(source, eval_data)
 
             # Zeebe task loop output mapping
             if event.task.loop and isinstance(event.context.data[event.task.loop.output_collection], dict):
@@ -123,8 +119,13 @@ class ExecutionTask(ExecutionBaseTask):
                 event.context.data[event.task.loop.output_collection][event.context.loop.index] = event.context.data[
                     event.task.loop.output_element]
 
-            # Zeebe parent process (sub-process) loop
-            if hasattr(event.task.parent_process, "loop") and event.task.parent_process.loop is not None and isinstance(event.context.data[event.task.parent_process.loop.output_collection], dict):
+            # if Zeebe parent process (sub-process) loop and output_collection is a dict and output_element variable
+            # exist...
+            if hasattr(event.task.parent_process, "loop")\
+                    and event.task.parent_process.loop is not None\
+                    and isinstance(event.context.data[event.task.parent_process.loop.output_collection], dict)\
+                    and event.task.parent_process.loop.output_element in event.context.data.as_dict():
+
                 # output mapping
                 # add loop output element variable value to loop output collection dict
                 event.context.data[event.task.parent_process.loop.output_collection][event.context.loop.index] = event.context.data[
@@ -134,3 +135,20 @@ class ExecutionTask(ExecutionBaseTask):
 
     def __repr__(self) -> str:
         return f"@task(expressions={self.expressions}, code={self.code.__name__})"
+
+
+def evaluate_expression(expression: str, data: dict):
+    """
+    Isolate eval command in a function to avoid variable conflicts
+    Return result of expression
+
+    :param expression: Expression to evaluate
+    :param data: variable which can be referenced in the expression
+    :return:
+    """
+    try:
+        result = eval(expression, {"Path": Path}, data)
+    except Exception as exception:
+        logging.error(exception)
+        raise Exception(exception)
+    return result
