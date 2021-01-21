@@ -1,3 +1,4 @@
+import copy
 import logging
 import re
 from typing import Callable, Optional
@@ -8,6 +9,7 @@ from adhesive.execution import token_utils
 from adhesive.execution.ExecutionBaseTask import ExecutionBaseTask, ExpressionList, RegexList
 from adhesive.logredirect.LogRedirect import redirect_stdout
 from adhesive.model.ActiveEvent import ActiveEvent
+from .ExecutionData import ExecutionData
 from .ExecutionToken import ExecutionToken
 
 
@@ -77,9 +79,16 @@ class ExecutionTask(ExecutionBaseTask):
                 params = token_utils.matches(self.re_expressions,
                                              event.context.task_name)
 
-            # todo: add an event.task.input_data and event.task.output_data to use the I/O mapping between
-            #  context.data and the task scope. Input mapping targets should only be visible to the task, and output_data filtered by output mapping
-            #  is added to context.data after the task. This is to avoid global variable conflicts.
+            # Zeebe: add an event.task.input and event.task.output to use the I/O mapping between
+            # context.data and the task local scope. Input mapping targets should only be visible to the task,
+            # and output_data filtered by output mapping is added to context.data after the task. This is to avoid
+            # global variable conflicts.
+
+            # copy global variables in local data input
+            event.task.input = copy.copy(event.context.data)
+            # create output local variable store
+            event.task.output = ExecutionData()
+
             # inputs mapping
             if event.task.mapping:
                 for input in event.task.mapping["inputs"]:
@@ -93,9 +102,12 @@ class ExecutionTask(ExecutionBaseTask):
                                             value if not isinstance(value, str) else f"\"{value}\"", source)
                     # parse source python expression and put result in target variable
                     eval_data = token_utils.get_eval_data(event.context)
-                    event.context.data[input["target"]] = evaluate_expression(source, eval_data)
+                    event.task.input[input["target"]] = evaluate_expression(source, eval_data)
 
             self.code(event.context, *params)  # type: ignore
+
+            # add local output variables to context data
+            event.context.data = ExecutionData.merge(event.context.data, event.task.output)
 
             # outputs mapping
             if event.task.mapping:
@@ -103,7 +115,7 @@ class ExecutionTask(ExecutionBaseTask):
                     # remove zeebe equal
                     source = output["source"].strip("= ")
                     # replace variables by their values
-                    for variable, value in event.context.data.as_dict().items():
+                    for variable, value in event.task.output.as_dict().items():
                         if isinstance(value, str) or isinstance(value, int) or isinstance(value, float):
                             # replace variable occurrence by value if not in quotes
                             source = re.sub('{text}(?=([^"]*"[^"]*")*[^"]*$)'.format(text=variable),
@@ -114,7 +126,6 @@ class ExecutionTask(ExecutionBaseTask):
 
             # Zeebe task loop output mapping
             if event.task.loop and isinstance(event.context.data[event.task.loop.output_collection], dict):
-                print(event.task.loop.output_collection, event.context.data)
                 # add loop output element variable value to loop output collection dict
                 event.context.data[event.task.loop.output_collection][event.context.loop.index] = event.context.data[
                     event.task.loop.output_element]
