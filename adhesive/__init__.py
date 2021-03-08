@@ -1,3 +1,5 @@
+from xml.etree import ElementTree
+
 from adhesive.time_patch import patch_time
 
 patch_time()
@@ -18,7 +20,7 @@ from adhesive.logging import configure_logging
 from adhesive.model.AdhesiveProcess import AdhesiveProcess
 from adhesive.model.ProcessExecutor import ProcessExecutor
 from adhesive.model.UiBuilderApi import UiBuilderApi
-from adhesive.process_read.bpmn import read_bpmn_file
+from adhesive.process_read.bpmn import read_bpmn_file, read_bpmn_content
 from adhesive.process_read.programmatic import generate_from_calls
 from adhesive.process_read.tasks import generate_from_tasks
 from adhesive.workspace.Workspace import Workspace
@@ -204,6 +206,19 @@ def bpmn_build(file_name: Union[str, IO[bytes], TextIO],
                initial_data = None):
     """ Start a build that was described in BPMN """
     process.process = read_bpmn_file(file_name)
+
+    return _build(ut_provider=ut_provider,
+                  wait_tasks=wait_tasks,
+                  initial_data=initial_data)
+
+
+def bpmn_build_from_content(content: str,
+               ut_provider: Optional['UserTaskProvider'] = None,
+               wait_tasks: bool = True,
+               initial_data = None):
+    """ Start a build that was described in BPMN """
+
+    process.process = read_bpmn_content(content)
 
     return _build(ut_provider=ut_provider,
                   wait_tasks=wait_tasks,

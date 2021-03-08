@@ -52,6 +52,14 @@ def read_bpmn_file(file_name: Union[str, IO[bytes], TextIO]) -> Process:
     return read_process(None, process)
 
 
+def read_bpmn_content(content: str) -> Process:
+    """ Read a BPMN XML string as a build process. """
+    root_node = ElementTree.fromstring(content)
+    process = find_node(root_node, 'process')
+
+    return read_process(None, process)
+
+
 def find_node(parent_node, name: str):
     for node in list(parent_node):
         _, node_name = parse_tag(node)
