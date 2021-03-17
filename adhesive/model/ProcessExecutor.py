@@ -125,7 +125,8 @@ def raise_unhandled_exception(task_error: TaskError):
     LOG.error(red("Exception:", bold=True))
     LOG.error(red(task_error.error))
 
-    sys.exit(1)
+    # to include adhesive in an application, let the application handle the exception
+    # sys.exit(1)
 
 
 class ProcessExecutor:
@@ -391,6 +392,8 @@ class ProcessExecutor:
                             failed_event = self.events[future_mapping.event_id],
                         )
                     )
+                    # to include adhesive in an application, let the application handle the exception
+                    raise e
 
             # we evaluate all timers that might still be pending
             schedule.run_pending()
