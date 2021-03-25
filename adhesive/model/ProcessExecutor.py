@@ -186,9 +186,6 @@ class ProcessExecutor:
         if adhesive.config.current.verify_mode:
             return ExecutionData(initial_data)
 
-        signal.signal(signal.SIGUSR1, self.print_state)
-        signal.signal(signal.SIGINT, self.kill_itself)
-
         # since the workspaces are allocated by lanes, we need to ensure
         # our default lane is existing.
         lane_controller.ensure_default_lane(self.adhesive_process)
