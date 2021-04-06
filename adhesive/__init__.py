@@ -225,6 +225,28 @@ def bpmn_build_from_content(content: str,
                   initial_data=initial_data)
 
 
+def get_process_executor_from_content(content: str, ut_provider: Optional['UserTaskProvider'] = None,
+                                      wait_tasks: bool = True):
+    """
+    Get process executor instance
+
+    :param content: BPMN XML content
+    :param ut_provider: UserTaskProvider instance (default=None)
+    :param wait_tasks: True to wait tasks (default=True)
+    :return:
+    """
+    process.process = read_bpmn_content(content)
+    configure_logging(config.current)
+
+    if ut_provider is None:
+        ut_provider = ConsoleUserTaskProvider()
+
+    return ProcessExecutor(
+        process,
+        ut_provider=ut_provider,
+        wait_tasks=wait_tasks)
+
+
 def _build(ut_provider: Optional['UserTaskProvider'] = None,
            wait_tasks: bool = True,
            initial_data=None):
