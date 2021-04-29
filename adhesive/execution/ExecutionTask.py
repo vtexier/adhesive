@@ -85,7 +85,7 @@ class ExecutionTask(ExecutionBaseTask):
             # global variable conflicts.
 
             # copy global variables in local data input
-            event.task.input = copy.copy(event.context.data)
+            event.task.input = copy.deepcopy(event.context.data)
             # create output local variable store
             event.task.output = ExecutionData()
 
