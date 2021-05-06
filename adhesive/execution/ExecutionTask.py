@@ -94,12 +94,6 @@ class ExecutionTask(ExecutionBaseTask):
                 for input in event.task.mapping["inputs"]:
                     # remove zeebe equal
                     source = input["source"].strip("= ")
-                    # replace variables by their values
-                    for variable, value in event.context.data.as_dict().items():
-                        if isinstance(value, str) or isinstance(value, int) or isinstance(value, float):
-                            # replace variable occurrence by value if not in quotes
-                            source = re.sub('{text}(?=([^"]*"[^"]*")*[^"]*$)'.format(text=variable),
-                                            value if not isinstance(value, str) else f"\"{value}\"", source)
                     # parse source python expression and put result in target variable
                     eval_data = token_utils.get_eval_data(event.context)
                     event.task.input[input["target"]] = evaluate_expression(source, eval_data)
@@ -114,12 +108,6 @@ class ExecutionTask(ExecutionBaseTask):
                 for output in event.task.mapping["outputs"]:
                     # remove zeebe equal
                     source = output["source"].strip("= ")
-                    # replace variables by their values
-                    for variable, value in event.task.output.as_dict().items():
-                        if isinstance(value, str) or isinstance(value, int) or isinstance(value, float):
-                            # replace variable occurrence by value if not in quotes
-                            source = re.sub('{text}(?=([^"]*"[^"]*")*[^"]*$)'.format(text=variable),
-                                            value if not isinstance(value, str) else f"\"{value}\"", source)
                     # parse source python expression and put result in target variable
                     eval_data = token_utils.get_eval_data(event.context)
                     event.context.data[output["target"]] = evaluate_expression(source, eval_data)
