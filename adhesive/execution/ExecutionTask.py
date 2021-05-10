@@ -114,9 +114,10 @@ class ExecutionTask(ExecutionBaseTask):
 
             # Zeebe task loop output mapping
             if event.task.loop and isinstance(event.context.data[event.task.loop.output_collection], dict):
+                # parse source python expression and put result in target variable
+                eval_data = token_utils.get_eval_data(event.context)
                 # add loop output element variable value to loop output collection dict
-                event.context.data[event.task.loop.output_collection][event.context.loop.index] = event.context.data[
-                    event.task.loop.output_element]
+                event.context.data[event.task.loop.output_collection][event.context.loop.index] = evaluate_expression(event.task.loop.output_element, eval_data)
 
             # if Zeebe parent process (sub-process) loop and output_collection is a dict and output_element variable
             # exist...
