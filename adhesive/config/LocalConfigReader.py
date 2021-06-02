@@ -1,8 +1,11 @@
+import logging
 from typing import Dict, Any
 import os
 
 from adhesive.config.LocalAdhesiveConfig import LocalAdhesiveConfig
 import yaml
+
+LOG = logging.getLogger("adhesive")
 
 
 def read_configuration(cwd=".",
@@ -28,5 +31,5 @@ def read_configuration_from_file(path: str) -> Dict[str, Any]:
         with open(path, "rt") as f:
             return yaml.safe_load(f)
     except Exception as e:
-        print(e)
+        LOG.warning(e)
         return dict()

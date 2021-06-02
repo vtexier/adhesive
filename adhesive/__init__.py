@@ -1,6 +1,9 @@
-from xml.etree import ElementTree
+import logging
 
 from adhesive.time_patch import patch_time
+
+# create logger adhesive and set default level to ERROR
+logging.getLogger(__name__).setLevel(logging.ERROR)
 
 patch_time()
 
