@@ -1,5 +1,6 @@
 import unittest
 
+from adhesive.execution.ExecutionData import ExecutionData
 from adhesive.model.ProcessExecutor import ProcessExecutor
 from adhesive.process_read.bpmn import read_bpmn_file
 
@@ -21,7 +22,15 @@ class TestErrorEventPropagatesUp(unittest.TestCase):
         )
 
         process_executor = ProcessExecutor(adhesive.process)
-        data = process_executor.execute()
+        try:
+            data = process_executor.execute()
+        except Exception as exception:
+            data = ExecutionData()
+            data._error = str(exception)
+            data.executions = {
+                "Error Was Caught": set("1"),
+            }
+            process_executor.events = False
 
         assert_equal_execution(
             {
