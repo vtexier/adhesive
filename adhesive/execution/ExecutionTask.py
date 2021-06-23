@@ -6,7 +6,11 @@ from typing import Callable, Optional
 from pathlib import Path
 
 from adhesive.execution import token_utils
-from adhesive.execution.ExecutionBaseTask import ExecutionBaseTask, ExpressionList, RegexList
+from adhesive.execution.ExecutionBaseTask import (
+    ExecutionBaseTask,
+    ExpressionList,
+    RegexList,
+)
 from adhesive.logredirect.LogRedirect import redirect_stdout
 from adhesive.model.ActiveEvent import ActiveEvent
 from .ExecutionData import ExecutionData
@@ -18,16 +22,17 @@ class ExecutionTask(ExecutionBaseTask):
     A task implementation.
     """
 
-    def __init__(self,
-                 *args,
-                 code: Callable,
-                 expressions: ExpressionList,
-                 regex_expressions: RegexList,
-                 loop: Optional[str] = None,
-                 when: Optional[str] = None,
-                 lane: Optional[str] = None,
-                 deduplicate: Optional[str] = None,
-                 ) -> None:
+    def __init__(
+        self,
+        *args,
+        code: Callable,
+        expressions: ExpressionList,
+        regex_expressions: RegexList,
+        loop: Optional[str] = None,
+        when: Optional[str] = None,
+        lane: Optional[str] = None,
+        deduplicate: Optional[str] = None,
+    ) -> None:
         """
         Create a new adhesive task. The `loop`, `when` and `lane` are only
         available when doing a programmatic API.
@@ -52,9 +57,7 @@ class ExecutionTask(ExecutionBaseTask):
         self.when = when
         self.lane = lane
 
-    def invoke(
-            self,
-            event: ActiveEvent) -> ExecutionToken:
+    def invoke(self, event: ActiveEvent) -> ExecutionToken:
         with redirect_stdout(event):
 
             # if Zeebe parent process (sub-process) has a loop and this task has not a loop...
